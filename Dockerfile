@@ -1,4 +1,4 @@
-ARG IMAGE_VERSION=4.5.9.028
+ARG IMAGE_VERSION=4.5.10.028
 
 ############################
 ## STAGE: build
