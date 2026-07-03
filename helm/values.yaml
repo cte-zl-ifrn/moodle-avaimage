@@ -5,7 +5,7 @@ replicaCount: 1
 
 image:
   repository: ctezlifrn/avamoodlebase
-  tag: "4.5.9.028"
+  tag: "4.5.11.059"
   pullPolicy: Always
 
 securityContext:
@@ -80,7 +80,14 @@ tolerations: []
 serviceAccount:
   create: false
 
-#--- Configuração de Afinidade de Nó ---
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "2Gi"
+
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
