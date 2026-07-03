@@ -15,6 +15,8 @@ RUN apt-get update \
         curl \
         jq \
         ca-certificates \
+        unzip \
+        zip \
     && rm -rf /var/lib/apt/lists/*
 
 ADD build/plugins /tmp/build/plugins
@@ -69,10 +71,25 @@ RUN chown -R www-data:www-data /tmp/build/plugins
 
 USER www-data
 
-RUN for plugin in *.zip; do \
-        /usr/local/bin/moodle-install-package.sh "$plugin"; \
+RUN set -eux; \
+    for plugin in *.zip; do \
+        echo "==> Instalando $plugin"; \
+        temp_dir=$(mktemp -d); \
+        unzip -q "$plugin" -d "$temp_dir"; \
+        top_dirs=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d); \
+        if [ "$(echo "$top_dirs" | wc -l)" -eq 1 ] && [ -f "$(echo "$top_dirs")/version.php" ]; then \
+            echo "-> Zipball detectado, extraindo diretório interno..."; \
+            plugin_dir=$(echo "$top_dirs"); \
+            inner_zip="/tmp/$(basename "$plugin").fixed.zip"; \
+            (cd "$plugin_dir" && zip -qr "$inner_zip" .); \
+            /usr/local/bin/moodle-install-package.sh "$inner_zip"; \
+            rm -f "$inner_zip"; \
+        else \
+            echo "-> Zip de plugin normal, instalando diretamente."; \
+            /usr/local/bin/moodle-install-package.sh "$plugin"; \
+        fi; \
+        rm -rf "$temp_dir"; \
     done
-
 RUN sed -i s/ava_image_not_built/$AVA_IMAGE_VERSION/g /var/www/html/readenv.php
 
 RUN sed -i \
