@@ -17,6 +17,7 @@ RUN apt-get update \
         ca-certificates \
         unzip \
         zip \
+        rsync \
     && rm -rf /var/lib/apt/lists/*
 
 ADD build/plugins /tmp/build/plugins
@@ -74,27 +75,51 @@ USER www-data
 RUN set -eux; \
     for plugin in *.zip; do \
         echo "================================================"; \
-        echo "🔧 Processando: $plugin"; \
+        echo "📦 Processando $plugin"; \
         echo "================================================"; \
-        temp_dir=$(mktemp -d); \
-        unzip -q "$plugin" -d "$temp_dir"; \
-        echo "📄 Primeiros arquivos dentro do zip:"; \
-        find "$temp_dir" -maxdepth 2 -type f | head -20; \
-        echo "📁 Diretórios de topo:"; \
-        find "$temp_dir" -mindepth 1 -maxdepth 1 -type d; \
-        top_dirs=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d); \
-        if [ "$(echo "$top_dirs" | wc -l)" -eq 1 ] && [ -f "$top_dirs/version.php" ]; then \
-            echo "✅ Zipball detectado. Repacotando..."; \
-            plugin_dir="$top_dirs"; \
-            inner_zip="/tmp/$(basename "$plugin").fixed.zip"; \
-            (cd "$plugin_dir" && zip -qr "$inner_zip" .); \
-            echo "📦 Instalando a partir do zip corrigido..."; \
-            /usr/local/bin/moodle-install-package.sh "$inner_zip"; \
+        \
+        if echo "$plugin" | grep -q '^moodle-'; then \
+            echo " -> Plugin dinâmico (GitHub) – instalação especial."; \
+            \
+            plugin_fullname=$(basename "$plugin" .zip | sed 's/^moodle-//'); \
+            plugin_type=$(echo "$plugin_fullname" | cut -d '_' -f1); \
+            plugin_name=$(echo "$plugin_fullname" | cut -d'_' -f2-); \
+            \
+            case $plugin_type in \
+                auth)      target_dir="auth" ;; \
+                mod)       target_dir="mod" ;; \
+                block)     target_dir="blocks" ;; \
+                tool)      target_dir="admin/tool" ;; \
+                local)     target_dir="local" ;; \
+                theme)     target_dir="theme" ;; \
+                *)         echo "Tipo de plugin dinâmico desconhecido: $plugin_type"; exit 1 ;; \
+            esac; \
+            \
+            plugin_dest="/var/www/html/$target_dir"; \
+            mkdir -p "$plugin_dest"; \
+            \
+            temp_dir=$(mktemp -d); \
+            unzip -q "$plugin" -d "$temp_dir"; \
+            \
+            echo " -> Estrutura do zip:"; \
+            find "$temp_dir" -maxdepth 2; \
+            \
+            top_dirs=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d); \
+            if [ "$(echo "$top_dirs" | wc -l)" -eq 1 ] && [ -f "$top_dirs/version.php" ]; then \
+                echo " -> Zipball detectado, extraindo e renomeando para $plugin_name"; \
+                # Copia o conteúdo da pasta interna para $plugin_dest/$plugin_name/
+                mkdir -p "$plugin_dest/$plugin_name"; \
+                rsync -a "$top_dirs"/ "$plugin_dest/$plugin_name/"; \
+            else \
+                echo " -> Asset normal, instalando como $plugin_name"; \
+                mkdir -p "$plugin_dest/$plugin_name"; \
+                rsync -a "$temp_dir"/ "$plugin_dest/$plugin_name/"; \
+            fi; \
+            rm -rf "$temp_dir"; \
         else \
-            echo "📦 Plugin normal (ou estrutura inesperada). Instalando original..."; \
+            echo " -> Plugin estático (repo) – usando script original."; \
             /usr/local/bin/moodle-install-package.sh "$plugin"; \
         fi; \
-        rm -rf "$temp_dir"; \
     done
 RUN sed -i s/ava_image_not_built/$AVA_IMAGE_VERSION/g /var/www/html/readenv.php
 
