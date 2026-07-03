@@ -73,19 +73,25 @@ USER www-data
 
 RUN set -eux; \
     for plugin in *.zip; do \
-        echo "==> Instalando $plugin"; \
+        echo "================================================"; \
+        echo "🔧 Processando: $plugin"; \
+        echo "================================================"; \
         temp_dir=$(mktemp -d); \
         unzip -q "$plugin" -d "$temp_dir"; \
+        echo "📄 Primeiros arquivos dentro do zip:"; \
+        find "$temp_dir" -maxdepth 2 -type f | head -20; \
+        echo "📁 Diretórios de topo:"; \
+        find "$temp_dir" -mindepth 1 -maxdepth 1 -type d; \
         top_dirs=$(find "$temp_dir" -mindepth 1 -maxdepth 1 -type d); \
-        if [ "$(echo "$top_dirs" | wc -l)" -eq 1 ] && [ -f "$(echo "$top_dirs")/version.php" ]; then \
-            echo "-> Zipball detectado, extraindo diretório interno..."; \
-            plugin_dir=$(echo "$top_dirs"); \
+        if [ "$(echo "$top_dirs" | wc -l)" -eq 1 ] && [ -f "$top_dirs/version.php" ]; then \
+            echo "✅ Zipball detectado. Repacotando..."; \
+            plugin_dir="$top_dirs"; \
             inner_zip="/tmp/$(basename "$plugin").fixed.zip"; \
             (cd "$plugin_dir" && zip -qr "$inner_zip" .); \
+            echo "📦 Instalando a partir do zip corrigido..."; \
             /usr/local/bin/moodle-install-package.sh "$inner_zip"; \
-            rm -f "$inner_zip"; \
         else \
-            echo "-> Zip de plugin normal, instalando diretamente."; \
+            echo "📦 Plugin normal (ou estrutura inesperada). Instalando original..."; \
             /usr/local/bin/moodle-install-package.sh "$plugin"; \
         fi; \
         rm -rf "$temp_dir"; \
