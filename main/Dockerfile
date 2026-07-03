@@ -9,14 +9,19 @@ ARG AVA_IMAGE_VERSION=ava_image_not_built
 ARG NVM_INSTALL_SHA256
 
 USER root
+
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends curl jq ca-certificates \
+    && apt-get install -y --no-install-recommends \
+        curl \
+        jq \
+        ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 ADD build/plugins /tmp/build/plugins
 WORKDIR /tmp/build/plugins
 
-RUN REPOS=" \
+RUN set -eux; \
+    REPOS=" \
         suap-ava-suite/moodle-tool_painelava \
         suap-ava-suite/moodle-local_suap \
         suap-ava-suite/moodle-auth_suap \
@@ -29,28 +34,74 @@ RUN REPOS=" \
         proitec-moodle-suite/moodle-block_multiprogress \
         proitec-moodle-suite/moodle-mod_mapaproitec \
         proitec-moodle-suite/moodle-mod_codexproitec \
-        proitec-moodle-suite/moodle-mod_medalhasproitec \
-    " \
-    && for REPO in $REPOS; do \
-        echo "Baixando $REPO..." \
-        && API_RESPONSE=$(curl -s "https://api.github.com/repos/$REPO/releases" | sed 's/[[:cntrl:]]//g') \
-        && URL=$(echo "$API_RESPONSE" | jq -r 'if type == "array" and length > 0 then (map(select(.tag_name | endswith("-test") | not)) | if length > 0 then .[0] | (if .assets | length > 0 then .assets[0].browser_download_url else .zipball_url end) else "null" end) else "null" end') \
-        && if [ "$URL" = "null" ] || [ -z "$URL" ]; then \
-            echo "❌ ERRO CRÍTICO: Nenhuma release oficial encontrada para $REPO ou falha na API. Interrompendo o build por segurança." \
-            && exit 1; \
-        fi \
-        && echo "✅ Release encontrada: $URL" \
-        && curl -sL "$URL" -o "$(basename $REPO).zip"; \
+        proitec-moodle-suite/moodle-mod_medalhasproitec"; \
+    \
+    for REPO in $REPOS; do \
+        echo ""; \
+        echo "=========================================================="; \
+        echo "📦 Processando: $REPO"; \
+        echo "=========================================================="; \
+        \
+        API_FILE="/tmp/$(basename "$REPO").json"; \
+        \
+        echo "➡️ Consultando API do GitHub..."; \
+        curl -fsSL "https://api.github.com/repos/$REPO/releases" -o "$API_FILE"; \
+        \
+        echo "➡️ Validando JSON..."; \
+        if ! jq empty "$API_FILE" >/dev/null 2>&1; then \
+            echo "❌ JSON inválido retornado pela API para $REPO"; \
+            echo ""; \
+            echo "===== Conteúdo recebido ====="; \
+            cat "$API_FILE"; \
+            exit 1; \
+        fi; \
+        \
+        URL=$(jq -r '
+            if type == "array" and length > 0 then
+                (
+                    map(select(.tag_name | endswith("-test") | not))
+                    | if length > 0 then
+                        .[0]
+                        | if (.assets | length) > 0
+                            then .assets[0].browser_download_url
+                            else .zipball_url
+                          end
+                      else
+                        "null"
+                      end
+                )
+            else
+                "null"
+            end
+        ' "$API_FILE"); \
+        \
+        if [ "$URL" = "null" ] || [ -z "$URL" ]; then \
+            echo "❌ Nenhuma release oficial encontrada para $REPO"; \
+            echo ""; \
+            echo "===== JSON recebido ====="; \
+            cat "$API_FILE"; \
+            exit 1; \
+        fi; \
+        \
+        echo "✅ Release encontrada:"; \
+        echo "$URL"; \
+        \
+        curl -fsSL "$URL" -o "$(basename "$REPO").zip"; \
     done
+
 RUN chown -R www-data:www-data /tmp/build/plugins
 
 USER www-data
-RUN for plugin in *.zip ; do /usr/local/bin/moodle-install-package.sh $plugin; done
+
+RUN for plugin in *.zip; do \
+        /usr/local/bin/moodle-install-package.sh "$plugin"; \
+    done
+
 RUN sed -i s/ava_image_not_built/$AVA_IMAGE_VERSION/g /var/www/html/readenv.php
-# Moodle timeline format customization: enable message defaults by replacing
-# MESSAGE_DEFAULT_LOGGEDIN + MESSAGE_DEFAULT_LOGGEDOFF with MESSAGE_DEFAULT_ENABLED
-# in course/format/timeline/db/messages.php during image build.
-RUN sed -i s/MESSAGE_DEFAULT_LOGGEDIN\ \+\ MESSAGE_DEFAULT_LOGGEDOFF/MESSAGE_DEFAULT_ENABLED/g /var/www/html/course/format/timeline/db/messages.php
+
+RUN sed -i \
+    s/MESSAGE_DEFAULT_LOGGEDIN\ \+\ MESSAGE_DEFAULT_LOGGEDOFF/MESSAGE_DEFAULT_ENABLED/g \
+    /var/www/html/course/format/timeline/db/messages.php
 
 
 ############################
@@ -66,7 +117,11 @@ USER root
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
-        bash curl ca-certificates git xz-utils \
+        bash \
+        curl \
+        ca-certificates \
+        git \
+        xz-utils \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p ${NVM_DIR} \
     && curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh -o /tmp/nvm-install.sh \
@@ -78,7 +133,6 @@ RUN apt-get update \
     && nvm use ${NODE_VERSION} \
     && npm install -g grunt-cli
 
-# Instala o Composer Globalmente
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 RUN export COMPOSER_ALLOW_SUPERUSER=1 \
@@ -90,14 +144,11 @@ RUN export COMPOSER_ALLOW_SUPERUSER=1 \
     && ln -s /opt/phpcs/vendor/bin/phpcs /usr/local/bin/phpcs \
     && ln -s /opt/phpcs/vendor/bin/phpcbf /usr/local/bin/phpcbf
 
-# Install PHPUnit globally (PHPUnit 11 for PHP 8.3 compatibility)
-# Set this to the official SHA256 for the exact phpunit-11.phar being downloaded.
 ARG PHPUNIT_11_PHAR_SHA256
 RUN curl -fL https://phar.phpunit.de/phpunit-11.phar -o /usr/local/bin/phpunit \
     && echo "${PHPUNIT_11_PHAR_SHA256}  /usr/local/bin/phpunit" | sha256sum -c - \
     && chmod +x /usr/local/bin/phpunit
 
-# Configure PCOV for PHPUnit coverage
 RUN echo "pcov.enabled=1" >> /usr/local/etc/php/conf.d/20-pcov.ini \
     && echo "pcov.directory=." >> /usr/local/etc/php/conf.d/20-pcov.ini
 
