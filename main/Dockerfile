@@ -16,7 +16,6 @@ RUN apt-get update \
 ADD build/plugins /tmp/build/plugins
 WORKDIR /tmp/build/plugins
 
-# Lista de repositórios otimizada em um array para facilitar manutenção
 RUN REPOS=" \
         suap-ava-suite/moodle-tool_painelava \
         suap-ava-suite/moodle-local_suap \
@@ -34,10 +33,15 @@ RUN REPOS=" \
     " \
     && for REPO in $REPOS; do \
         echo "Baixando $REPO..." \
-        && URL=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r 'map(select(.tag_name | endswith("-test") | not)) | .[0] | if .assets | length > 0 then .assets[0].browser_download_url else .zipball_url end') \
+        && API_RESPONSE=$(curl -s "https://api.github.com/repos/$REPO/releases" | sed 's/[[:cntrl:]]//g') \
+        && URL=$(echo "$API_RESPONSE" | jq -r 'if type == "array" and length > 0 then (map(select(.tag_name | endswith("-test") | not)) | if length > 0 then .[0] | (if .assets | length > 0 then .assets[0].browser_download_url else .zipball_url end) else "null" end) else "null" end') \
+        && if [ "$URL" = "null" ] || [ -z "$URL" ]; then \
+            echo "❌ ERRO CRÍTICO: Nenhuma release oficial encontrada para $REPO ou falha na API. Interrompendo o build por segurança." \
+            && exit 1; \
+        fi \
+        && echo "✅ Release encontrada: $URL" \
         && curl -sL "$URL" -o "$(basename $REPO).zip"; \
     done
-
 RUN chown -R www-data:www-data /tmp/build/plugins
 
 USER www-data
