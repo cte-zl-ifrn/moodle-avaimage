@@ -35,60 +35,36 @@ RUN set -eux; \
         proitec-moodle-suite/moodle-mod_mapaproitec \
         proitec-moodle-suite/moodle-mod_codexproitec \
         proitec-moodle-suite/moodle-mod_medalhasproitec"; \
-    \
     for REPO in $REPOS; do \
-        echo ""; \
         echo "=========================================================="; \
         echo "📦 Processando: $REPO"; \
         echo "=========================================================="; \
-        \
         API_FILE="/tmp/$(basename "$REPO").json"; \
-        \
-        echo "➡️ Consultando API do GitHub..."; \
+        echo "➡️ Baixando releases..."; \
         curl -fsSL "https://api.github.com/repos/$REPO/releases" -o "$API_FILE"; \
-        \
+        echo "➡️ Limpando caracteres de controle..."; \
+        tr -d '\000-\037' < "$API_FILE" > "${API_FILE}.clean"; \
+        mv "${API_FILE}.clean" "$API_FILE"; \
         echo "➡️ Validando JSON..."; \
         if ! jq empty "$API_FILE" >/dev/null 2>&1; then \
-            echo "❌ JSON inválido retornado pela API para $REPO"; \
-            echo ""; \
-            echo "===== Conteúdo recebido ====="; \
+            echo "❌ JSON inválido ou resposta inesperada para $REPO"; \
+            echo "===== CONTEÚDO RECEBIDO ====="; \
             cat "$API_FILE"; \
+            echo "===== FIM DO CONTEÚDO ====="; \
             exit 1; \
         fi; \
-        \
-        URL=$(jq -r '
-            if type == "array" and length > 0 then
-                (
-                    map(select(.tag_name | endswith("-test") | not))
-                    | if length > 0 then
-                        .[0]
-                        | if (.assets | length) > 0
-                            then .assets[0].browser_download_url
-                            else .zipball_url
-                          end
-                      else
-                        "null"
-                      end
-                )
-            else
-                "null"
-            end
-        ' "$API_FILE"); \
-        \
+        URL=$(jq -r 'if type == "array" and length > 0 then (map(select(.tag_name | endswith("-test") | not)) | if length > 0 then .[0] | (if .assets | length > 0 then .assets[0].browser_download_url else .zipball_url end) else "null" end) else "null" end' "$API_FILE"); \
         if [ "$URL" = "null" ] || [ -z "$URL" ]; then \
             echo "❌ Nenhuma release oficial encontrada para $REPO"; \
-            echo ""; \
-            echo "===== JSON recebido ====="; \
+            echo "===== JSON PROCESSADO ====="; \
             cat "$API_FILE"; \
+            echo "===== FIM ====="; \
             exit 1; \
         fi; \
-        \
-        echo "✅ Release encontrada:"; \
-        echo "$URL"; \
-        \
+        echo "✅ Release: $URL"; \
         curl -fsSL "$URL" -o "$(basename "$REPO").zip"; \
     done
-
+    
 RUN chown -R www-data:www-data /tmp/build/plugins
 
 USER www-data
