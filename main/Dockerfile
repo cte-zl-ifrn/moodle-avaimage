@@ -16,10 +16,27 @@ RUN apt-get update \
 ADD build/plugins /tmp/build/plugins
 WORKDIR /tmp/build/plugins
 
-RUN URL_PAINELAVA=$(curl -s https://api.github.com/repos/suap-ava-suite/moodle-tool_painelava/releases | jq -r 'map(select(.tag_name | endswith("-test") | not)) | .[0].zipball_url') \
-    && curl -sL "$URL_PAINELAVA" -o tool_painelava.zip \
-    && URL_SUAP=$(curl -s https://api.github.com/repos/suap-ava-suite/moodle-local_suap/releases | jq -r 'map(select(.tag_name | endswith("-test") | not)) | .[0].zipball_url') \
-    && curl -sL "$URL_SUAP" -o local_suap.zip
+# Lista de repositórios otimizada em um array para facilitar manutenção
+RUN REPOS=" \
+        suap-ava-suite/moodle-tool_painelava \
+        suap-ava-suite/moodle-local_suap \
+        suap-ava-suite/moodle-auth_suap \
+        suap-moodletheme-suite/moodle-theme_suap \
+        suap-moodletheme-suite/moodle-block_course_gallery \
+        suap-moodletheme-suite/moodle-block_course_rating \
+        suap-moodletheme-suite/moodle-block_recommendation \
+        suap-moodletheme-suite/moodle-block_site_info \
+        proitec-moodle-suite/moodle-mod_multiprogress \
+        proitec-moodle-suite/moodle-block_multiprogress \
+        proitec-moodle-suite/moodle-mod_mapaproitec \
+        proitec-moodle-suite/moodle-mod_codexproitec \
+        proitec-moodle-suite/moodle-mod_medalhasproitec \
+    " \
+    && for REPO in $REPOS; do \
+        echo "Baixando $REPO..." \
+        && URL=$(curl -s "https://api.github.com/repos/$REPO/releases" | jq -r 'map(select(.tag_name | endswith("-test") | not)) | .[0] | if .assets | length > 0 then .assets[0].browser_download_url else .zipball_url end') \
+        && curl -sL "$URL" -o "$(basename $REPO).zip"; \
+    done
 
 RUN chown -R www-data:www-data /tmp/build/plugins
 
