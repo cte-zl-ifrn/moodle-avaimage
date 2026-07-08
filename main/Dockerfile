@@ -129,7 +129,7 @@ RUN sed -i \
 
 
 ############################
-## STAGE: dev
+## STAGE:  dev
 ############################
 FROM build AS dev
 
