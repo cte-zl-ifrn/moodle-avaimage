@@ -42,7 +42,12 @@ spec:
             - name: http
               containerPort: {{ .Values.service.port }}
               protocol: TCP
-          
+
+          {{- with .Values.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+            
           # Carrega variáveis gerais do ConfigMap
           envFrom:
             - configMapRef:
@@ -76,7 +81,7 @@ spec:
           volumeMounts:
             - name: storage-volume
               mountPath: {{ .Values.persistence.mountPath }}
-
+          
       volumes:
         - name: storage-volume
           persistentVolumeClaim:

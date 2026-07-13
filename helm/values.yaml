@@ -5,7 +5,7 @@ replicaCount: 1
 
 image:
   repository: ctezlifrn/avamoodlebase
-  tag: "4.5.9.028"
+  tag: "4.5.11.059"
   pullPolicy: Always
 
 securityContext:
@@ -61,6 +61,7 @@ ingress:
     cert-manager.io/cluster-issuer: "letsencrypt-prod"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
   hosts:
     - host: moodle.ead.ifrn.edu.br
       paths:
@@ -79,7 +80,14 @@ tolerations: []
 serviceAccount:
   create: false
 
-#--- Configuração de Afinidade de Nó ---
+resources:
+  requests:
+    cpu: "500m"
+    memory: "1Gi"
+  limits:
+    cpu: "2"
+    memory: "2Gi"
+
 affinity:
   nodeAffinity:
     requiredDuringSchedulingIgnoredDuringExecution:
