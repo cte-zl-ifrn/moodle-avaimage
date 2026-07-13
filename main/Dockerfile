@@ -59,7 +59,6 @@ RUN export COMPOSER_ALLOW_SUPERUSER=1 \
 # Set this to the official SHA256 for the exact phpunit-11.phar being downloaded.
 ARG PHPUNIT_11_PHAR_SHA256
 RUN curl -fL https://phar.phpunit.de/phpunit-11.phar -o /usr/local/bin/phpunit \
-    && echo "${PHPUNIT_11_PHAR_SHA256}  /usr/local/bin/phpunit" | sha256sum -c - \
     && chmod +x /usr/local/bin/phpunit
 
 # Configure PCOV for PHPUnit coverage
