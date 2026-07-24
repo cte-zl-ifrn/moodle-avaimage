@@ -29,7 +29,7 @@ O projeto usa GitHub Actions para build e deploy automatizado. O workflow é aci
 export BASE_IMAGE_VERSION=4.5.10.35
 
 # 2. Atualize a versão da image base
-cd ~/projetos/IFRN/suap-ava-suite/docker_moodle
+cd ~/projetos/IFRN/sas/docker_moodle
 sed -i "s/MOODLE_IMAGE_VERSION=.*$/MOODLE_IMAGE_VERSION=${BASE_IMAGE_VERSION}/g" ./main/Dockerfile
 
 # 3. Commit suas alterações
