@@ -18,11 +18,39 @@ jobs:
       contents: read
     outputs:
       base_changed: ${{ steps.changes.outputs.base }}
+      # Novas saídas de segurança exportadas para os outros jobs
+      is_prod: ${{ steps.tag_check.outputs.is_prod }}
+      is_test: ${{ steps.tag_check.outputs.is_test }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
+
+      - name: Validar Formato da Tag (Trava de Segurança)
+        id: tag_check
+        run: |
+          TAG="${{ github.ref_name }}"
+          echo "Avaliando a tag: $TAG"
+
+          # Trava PROD: Aceita APENAS números separados por pontos (ex: 4.5.11.056)
+          if [[ "$TAG" =~ ^[0-9]+(\.[0-9]+)+$ ]]; then
+            echo "✅ Tag de PRODUÇÃO identificada e validada."
+            echo "is_prod=true" >> $GITHUB_OUTPUT
+            echo "is_test=false" >> $GITHUB_OUTPUT
+
+          # Trava TEST: Aceita a sequência de números obrigatoriamente terminada em -test
+          elif [[ "$TAG" =~ ^[0-9]+(\.[0-9]+)+-test$ ]]; then
+            echo "✅ Tag de TESTE identificada e validada."
+            echo "is_prod=false" >> $GITHUB_OUTPUT
+            echo "is_test=true" >> $GITHUB_OUTPUT
+
+          # Bloqueio padrão para qualquer outra coisa (ex: v1, bugfix, wip)
+          else
+            echo "🚫 Tag bloqueada. Não segue o padrão numérico de prod ou test."
+            echo "is_prod=false" >> $GITHUB_OUTPUT
+            echo "is_test=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Check changes in /base directory
         id: changes
@@ -64,7 +92,10 @@ jobs:
 
   build-base:
     needs: detect-base-changes
-    if: needs.detect-base-changes.outputs.base_changed == 'true'
+    # Só builda a base se houve mudança E se a tag passou na nossa trava (prod ou test)
+    if: |
+      needs.detect-base-changes.outputs.base_changed == 'true' &&
+      (needs.detect-base-changes.outputs.is_prod == 'true' || needs.detect-base-changes.outputs.is_test == 'true')
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -92,7 +123,6 @@ jobs:
         with:
           context: ./base
           push: true
-          # AQUI: Usando a versão limpa para a imagem base
           tags: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE }}:${{ env.CLEAN_VERSION }}
           cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.BASE_IMAGE }}:latest
           cache-to: type=inline
@@ -101,11 +131,12 @@ jobs:
             PHPUNIT_11_PHAR_SHA256=${{ vars.PHPUNIT_11_PHAR_SHA256 }}
 
   build-main:
-    needs: build-base
+    # Agora ele escuta a trava do detect-base-changes
+    needs: [detect-base-changes, build-base]
     if: |
       always() &&
       (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      !endsWith(github.ref_name, '-test')
+      needs.detect-base-changes.outputs.is_prod == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -140,11 +171,12 @@ jobs:
             PHPUNIT_11_PHAR_SHA256=${{ vars.PHPUNIT_11_PHAR_SHA256 }}
 
   build-test:
-    needs: build-base
+    # Escutando a trava de dev
+    needs: [detect-base-changes, build-base]
     if: |
       always() &&
       (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
-      endsWith(github.ref_name, '-test')
+      needs.detect-base-changes.outputs.is_test == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -180,12 +212,12 @@ jobs:
             PHPUNIT_11_PHAR_SHA256=${{ vars.PHPUNIT_11_PHAR_SHA256 }}
 
   deploy-test:
-    needs: [build-test]
+    needs: [detect-base-changes, build-test, build-base]
     if: |
       always() &&
       (needs.build-base.result == 'success' || needs.build-base.result == 'skipped') &&
       needs.build-test.result == 'success' &&
-      endsWith(github.ref_name, '-test')
+      needs.detect-base-changes.outputs.is_test == 'true'
     runs-on: [self-hosted, runner-dead]
     permissions:
       contents: read
@@ -208,10 +240,11 @@ jobs:
             --set image.repository=${{ env.REGISTRY }}/${{ env.DEV_IMAGE }}"
 
   deploy-main:
-    needs: [build-main]
+    needs: [detect-base-changes, build-main]
     if: |
-      always() && needs.build-main.result == 'success' &&
-      startsWith(github.ref, 'refs/tags/') && !endsWith(github.ref_name, '-test')
+      always() && 
+      needs.build-main.result == 'success' &&
+      needs.detect-base-changes.outputs.is_prod == 'true'
     runs-on: [self-hosted, runner-dead]
     permissions:
       contents: read
