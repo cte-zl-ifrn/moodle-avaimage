@@ -14,6 +14,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends curl jq ca-certificates unzip zip rsync \
     && rm -rf /var/lib/apt/lists/*
 
+ADD moodle-install-package.sh /usr/local/bin/moodle-install-package.sh
 ADD build/plugins /tmp/build/plugins
 
 USER www-data
@@ -23,10 +24,6 @@ RUN set -eux; \
         moodle-install-package.sh "$plugin"; \
     done
 RUN sed -i s/ava_image_not_built/$AVA_IMAGE_VERSION/g /var/www/html/readenv.php
-
-# RUN sed -i \
-#     s/MESSAGE_DEFAULT_LOGGEDIN\ \+\ MESSAGE_DEFAULT_LOGGEDOFF/MESSAGE_DEFAULT_ENABLED/g
-#     /var/www/html/course/format/timeline/db/messages.php
 
 
 ############################

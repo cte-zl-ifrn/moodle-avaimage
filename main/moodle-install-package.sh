@@ -9,7 +9,7 @@ export NC='\033[0m' # No Color
 export URI_BASE='/tmp/build/plugins/' # No Color
 
 filename=$(echo $1 | cut -d '/' -f2)
-plugin_fullname=$(echo $filename | sed 's/_moodle.*//g' | awk '{printf "%-32s\n", $0}')
+plugin_fullname=$(echo $filename | sed 's/_moodle.*//g')
 plugin_version=$(echo $filename | sed 's/.*_moodle//g' | sed 's/.*_//g' | sed 's/\.zip.*//g' | awk '{printf "%-11s\n", $0}')
 plugin_type=$(echo $plugin_fullname | cut -d '_' -f1)
 plugin_name=$(echo $plugin_fullname | cut -d '_' -f2)
@@ -82,10 +82,13 @@ case $plugin_type in
         ;;
 esac
 
-echo -e "${COLOR_LIGHT_GREEN}INSTALL ${COLOR_RED}$plugin_fullname${COLOR_LIGHT_GREEN}, ${COLOR_CIAN}$plugin_version${COLOR_LIGHT_GREEN} at ${COLOR_PURPLE}$dir/$plugin_name${NC}, from $URL_BASE/$1"
+echo -e "${COLOR_LIGHT_GREEN}INSTALL ${COLOR_RED}$plugin_fullname${COLOR_LIGHT_GREEN}:${COLOR_CIAN}$plugin_version${COLOR_LIGHT_GREEN} at ${COLOR_PURPLE}$dir/$plugin_name${NC}, from /tmp/stage/$plugin_fullname"
 
-mkdir -p /tmp/stage/$plugin_fullname
-unzip -q "$URI_BASE/$1" -d /tmp/stage/$plugin_fullname
-rm -rf "$dir/$plugin_name"
-mv /tmp/stage/$plugin_fullname/*/ "$dir/$plugin_name" 2>/dev/null
-rm -rf /tmp/stage/$plugin_fullname
+
+cd /tmp/build/plugins/
+mkdir -p /tmp/stage
+unzip -q "$1" -d /tmp/stage
+cd /tmp/stage
+mkdir -p "$dir/$plugin_name/"
+mv -- /tmp/stage/*/* "$dir/$plugin_name/"
+rm -rf /tmp/stage
