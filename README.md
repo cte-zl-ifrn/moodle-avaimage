@@ -13,59 +13,67 @@ O sistema de versionamento segue o padrão `M.m.r.s`, onde:
 
 ## CI/CD com GitHub Actions
 
-O projeto usa GitHub Actions para build e deploy automatizado. O workflow é acionado automaticamente ao criar uma tag Git.
+O projeto usa GitHub Actions para build e deploy automatizado. O workflow `.github/workflows/build-and-deploy.yml` é acionado automaticamente ao criar qualquer tag Git.
 
 ### Fluxo de Build Inteligente
 
-1. **Detecção de Mudanças**: Verifica se houve alterações na pasta `/base` desde a última tag
-2. **Build Condicional da Base**: Constrói `ctezlifrn/avamoodlebase` **apenas** se `/base` foi modificado
-3. **Build Principal**: Sempre constrói `ctezlifrn/avamoodle` em toda tag
-4. **Deploy Automático**: Atualiza o servidor de produção após builds bem-sucedidos
+O workflow possui uma trava de segurança por formato de tag e um mecanismo de build e deploy condicional:
+
+1. **Validação do Formato da Tag (Trava de Segurança)**:
+   - **Produção**: Apenas tags puramente numéricas no padrão `M.m.r.s` (ex: `4.5.12.072`).
+   - **Teste / Homologação**: Tags numéricas terminadas obrigatoriamente em `-test` (ex: `4.5.12.072-test`).
+   - Qualquer outro formato de tag (ex: `v1`, `wip`, `bugfix`) é bloqueado e não executa o build.
+
+2. **Detecção de Mudanças na Imagem Base**:
+   - Compara a pasta `/base` entre a tag atual e a tag anterior (`git diff`).
+   - Se `/base` foi modificado (ou na primeira release), a imagem base `ctezlifrn/avamoodlebase:<versao>` é construída e publicada. Caso contrário, a etapa `build-base` é ignorada (*skipped*).
+
+3. **Build da Imagem**:
+   - **Produção** (`is_prod`): Constrói e envia a imagem principal `ctezlifrn/avamoodle:<tag>`.
+   - **Teste** (`is_test`): Constrói e envia a imagem de desenvolvimento `ctezlifrn/avamoodledev:<tag>` (usando o estágio `dev` do Dockerfile).
+
+4. **Deploy Automático**:
+   - **Produção**: Atualiza o servidor via Docker Compose (job `deploy-main`).
+   - **Teste**: Atualiza o ambiente de homologação no cluster Kubernetes via Helm Chart (job `deploy-test`).
 
 ### Como Fazer um Release
 
 ```bash
-# 1. Defina a versão
-export BASE_IMAGE_VERSION=4.5.10.35
+# 1. Defina a versão desejada
+export IMAGE_VERSION=4.5.12.072
 
-# 2. Atualize a versão da image base
-cd ~/projetos/IFRN/sas/docker_moodle
-sed -i "s/MOODLE_IMAGE_VERSION=.*$/MOODLE_IMAGE_VERSION=${BASE_IMAGE_VERSION}/g" ./main/Dockerfile
+# 2. Atualize a versão da imagem base no main/Dockerfile (se aplicável)
+sed -i "s/MOODLE_IMAGE_VERSION=.*$/MOODLE_IMAGE_VERSION=${IMAGE_VERSION}/g" ./main/Dockerfile
 
 # 3. Commit suas alterações
 git add .
-git commit -m "build: [add] descreva o que foi corrigido"
+git commit -m "build: atualizar versao da imagem para ${IMAGE_VERSION}"
 git push origin main
 
-# 4. Crie uma tag (formato: versão Moodle.build)
-git tag $BASE_IMAGE_VERSION
+# 4a. Para Release de TESTE (deploy em Kubernetes via Helm):
+git tag ${IMAGE_VERSION}-test
+git push origin ${IMAGE_VERSION}-test
 
-# 5. Envie a tag para o GitHub (isso aciona o CI/CD)
-git push origin $BASE_IMAGE_VERSION
+# 4b. Para Release de PRODUÇÃO (deploy via Docker Compose):
+git tag ${IMAGE_VERSION}
+git push origin ${IMAGE_VERSION}
 ```
 
-### Configuração dos Secrets
+### Configuração de Secrets e Variáveis
 
-Configure os seguintes secrets no GitHub (Settings → Secrets and variables → Actions):
+Configure as seguintes credenciais e variáveis no GitHub (Settings → Secrets and variables → Actions):
 
-#### Secrets (Organization level - já configurados)
+#### Organization / Repository Secrets & Variables
 
-| Secret               | Descrição                     |
-|----------------------|-------------------------------|
-| `DOCKERHUB_USERNAME` | Usuário do Docker Hub         |
-| `DOCKERHUB_TOKEN`    | Token de acesso do Docker Hub |
-
-#### Variables (Organization level - já configuradas)
-
-| Variable         | Descrição          | Exemplo      |
-|------------------|--------------------|--------------|
-| `DOCKERHUB_HOST` | Host do Docker Hub | `docker.io`  |
-
-#### Secrets (Repository level - necessários)
-
-| Secret     | Descrição               | Exemplo       |
-|------------|-------------------------|---------------|
-| `SSH_HOST` | IP/hostname do servidor | `10.4.5.10`   |
+| Nome | Tipo | Descrição | Exemplo |
+|------|------|-----------|---------|
+| `DOCKERHUB_USERNAME` | Secret | Usuário do Docker Hub | `ctezlifrn` |
+| `DOCKERHUB_TOKEN` | Secret | Token de Acesso ao Docker Hub | `dckr_pat_...` |
+| `DOCKERHUB_HOST` | Variable | Registry Host | `docker.io` |
+| `SSH_HOST` | Variable / Secret | Servidor de Produção (Docker Compose) | `10.4.5.10` |
+| `K8S_HOST` | Variable / Secret | Servidor de Homologação (Helm/K8s) | `10.4.5.20` |
+| `NVM_INSTALL_SHA256` | Variable | Checksum para instalador do NVM | `...` |
+| `PHPUNIT_11_PHAR_SHA256` | Variable | Checksum do PHAR do PHPUnit 11 | `...` |
 
 ## Desenvolvimento Local
 
