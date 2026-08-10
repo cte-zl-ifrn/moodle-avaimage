@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-export TERM=xterm-256color 
+export TERM=xterm-256color
 export COLOR_LIGHT_GREEN='\e[1;32m'
 export COLOR_RED='\033[0;31m'
 export COLOR_PURPLE='\033[0;35m'

@@ -69,6 +69,23 @@ Configure os seguintes secrets no GitHub (Settings → Secrets and variables →
 
 ## Desenvolvimento Local
 
+### Configuração do Pre-commit
+
+Este repositório possui validações automáticas com `pre-commit` para verificação de sintaxe YAML, linting de Dockerfiles (`hadolint`), validação de scripts Shell (`shellcheck`), remoção de espaços em branco e verificação de chaves privadas.
+
+Para instalar e ativar os ganchos locais:
+
+```bash
+# 1. Instalar a ferramenta (se ainda não instalada)
+pip install pre-commit
+
+# 2. Ativar os ganchos git no repositório
+pre-commit install
+
+# 3. Executar manualmente em todos os arquivos
+pre-commit run --all-files
+```
+
 ### Build Manual (sem CI/CD)
 
 ```bash

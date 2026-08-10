@@ -21,7 +21,7 @@ spec:
       serviceAccountName: {{ include "moodle.serviceAccountName" . }}
       securityContext:
         runAsUser: {{ .Values.securityContext.runAsUser }}
-      
+
       # initContainers:
       #   - name: fix-permissions
       #     image: busybox
@@ -47,7 +47,7 @@ spec:
           resources:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-            
+
           # Carrega variáveis gerais do ConfigMap
           envFrom:
             - configMapRef:
@@ -68,7 +68,7 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.postgres.vault.secretName }}
                   key: {{ .Values.postgres.vault.secretKey }}
-            
+
             # --- REDIS ENV VARS ---
             {{- if .Values.redis.enabled }}
             - name: CFG_SESSION_REDIS_AUTH
@@ -81,7 +81,7 @@ spec:
           volumeMounts:
             - name: storage-volume
               mountPath: {{ .Values.persistence.mountPath }}
-          
+
       volumes:
         - name: storage-volume
           persistentVolumeClaim:

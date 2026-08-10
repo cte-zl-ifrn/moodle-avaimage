@@ -11,7 +11,23 @@ git clone <repository-url>
 cd moodle_docker
 ```
 
-### 2. Crie uma Branch para sua Feature/Fix
+### 2. Configure os Ganchos do Pre-commit
+
+O projeto utiliza `pre-commit` para garantir a qualidade do código (validação de sintaxe YAML, linting de scripts shell, validação de Dockerfiles, remoção de espaços em branco, etc.).
+
+```bash
+# Instalar a ferramenta pre-commit (se ainda não possuir)
+pip install pre-commit
+# ou via brew (macOS): brew install pre-commit
+
+# Ativar os ganchos do git no repositório
+pre-commit install
+
+# (Opcional) Executar manualmente em todos os arquivos
+pre-commit run --all-files
+```
+
+### 3. Crie uma Branch para sua Feature/Fix
 
 ```bash
 git checkout -b feat/minha-nova-funcionalidade
@@ -19,7 +35,7 @@ git checkout -b feat/minha-nova-funcionalidade
 git checkout -b fix/correcao-de-bug
 ```
 
-### 3. Faça suas Alterações
+### 4. Faça suas Alterações
 
 #### Alterações na Imagem Base (`/base`)
 
@@ -40,7 +56,7 @@ cp novo-plugin.zip main/build/plugins/
 vim main/Dockerfile
 ```
 
-### 4. Teste Localmente
+### 5. Teste Localmente
 
 ```bash
 # Build local
@@ -51,7 +67,7 @@ docker compose build
 docker compose up -d
 ```
 
-### 5. Commit com Mensagens Convencionais
+### 6. Commit com Mensagens Convencionais
 
 Use [Conventional Commits](https://www.conventionalcommits.org/):
 
@@ -70,7 +86,7 @@ git add .
 git commit -m "feat: adicionar suporte ao plugin XYZ"
 ```
 
-### 6. Push e Crie um Pull Request
+### 7. Push e Crie um Pull Request
 
 ```bash
 git push origin feat/minha-nova-funcionalidade
@@ -133,6 +149,7 @@ ssh root@$SSH_HOST "cd /var/dockers && docker compose logs -n 100 ava"
 ## Checklist para Pull Requests
 
 - [ ] Código segue os padrões do projeto
+- [ ] Ganchos do `pre-commit` executados sem erros (`pre-commit run --all-files`)
 - [ ] Documentação atualizada (se aplicável)
 - [ ] Testado localmente com `docker compose`
 - [ ] Mensagens de commit seguem Conventional Commits

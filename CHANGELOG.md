@@ -34,4 +34,3 @@ e este projeto adere ao [Semantic Versioning](https://semver.org/lang/pt-BR/).
 ## Versões Anteriores
 
 Versões anteriores usavam GitLab CI e não possuem registro formal de mudanças.
-

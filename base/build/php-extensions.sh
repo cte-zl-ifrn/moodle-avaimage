@@ -29,7 +29,7 @@ PACKAGES_EXTRA="aspell cron locales poppler-utils graphviz"
 
 apt-get update
 apt-get upgrade -y
-apt-get install -y --no-install-recommends apt-transport-https $BUILD_PACKAGES $PACKAGES_POSTGRES $PACKAGES_RUNTIME $PACKAGES_LDAP $PACKAGES_EXTRA 
+apt-get install -y --no-install-recommends apt-transport-https $BUILD_PACKAGES $PACKAGES_POSTGRES $PACKAGES_RUNTIME $PACKAGES_LDAP $PACKAGES_EXTRA
 
 echo "Installing php extensions"
 
@@ -47,8 +47,8 @@ docker-php-ext-install -j$(nproc) gd
 docker-php-ext-configure ldap
 docker-php-ext-install -j$(nproc) ldap
 
-# APCu, igbinary, Redis, timezonedb, uuid, excimer, PCov, xdebug 
-pecl install apcu igbinary pcov timezonedb uuid excimer xdebug 
+# APCu, igbinary, Redis, timezonedb, uuid, excimer, PCov, xdebug
+pecl install apcu igbinary pcov timezonedb uuid excimer xdebug
 docker-php-ext-enable apcu igbinary pcov timezonedb uuid excimer xdebug
 
 echo 'apc.enable_cli = On' >> /usr/local/etc/php/conf.d/10-docker-php-ext-apcu.ini

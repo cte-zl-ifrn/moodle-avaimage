@@ -39,7 +39,7 @@ function inicial_set_defaults() {
         set_config($config, env($venv, $default_value), $plugin);
     }
 
-    $DB->update_record('user', (object) ['lang' => env('INICIAL_CONFIG_LANG', 'pt_br'), 'id' => 2]);   
+    $DB->update_record('user', (object) ['lang' => env('INICIAL_CONFIG_LANG', 'pt_br'), 'id' => 2]);
 }
 
 function inicial_add_default_blocks() {
@@ -83,7 +83,7 @@ function inicial_add_default_langs() {
     $langs = env('INICIAL_ADD_DEFAULT_LANGS', 'pt_br');
     if ($langs == '') {
         return;
-    } 
+    }
     $controller = new \tool_langimport\controller();
     $controller->install_languagepacks(explode(',', $langs));
     get_string_manager()->reset_caches();
@@ -142,7 +142,7 @@ function inicial_oauth2() {
     foreach ($endpoints as $endpoint) {
         list($key, $value) = explode('=', $endpoint, 2);
         inicial_create_or_update(
-            'oauth2_endpoint', 
+            'oauth2_endpoint',
             ['issuerid'=> $issuer->id, 'name'=>$key],
             ["url"=>$value],
             ['timemodified'=>time()],
@@ -154,7 +154,7 @@ function inicial_oauth2() {
     foreach ($mappings as $endpoint) {
         list($key, $value) = explode('=', $endpoint, 2);
         inicial_create_or_update(
-            'oauth2_user_field_mapping', 
+            'oauth2_user_field_mapping',
             ['issuerid'=> $issuer->id, 'externalfield'=>$key],
             ["internalfield"=>$value],
             ['timemodified'=>time()],

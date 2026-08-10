@@ -1,6 +1,6 @@
 # Documentação de Plugins Instalados
 
-> **Data de Atualização**: Março de 2026  
+> **Data de Atualização**: Março de 2026
 > **Fonte**: Repositório em `/main/build/plugins`
 
 Esta documentação lista todos os plugins que serão instalados no ambiente Moodle, organizados por tipo.
@@ -394,4 +394,3 @@ Esta documentação lista todos os plugins que serão instalados no ambiente Moo
 ---
 
 **Documentação criada**: Março de 2026
-

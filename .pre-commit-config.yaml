@@ -1,0 +1,38 @@
+# Configuração do pre-commit para o projeto AVA Moodle Docker
+# Veja https://pre-commit.com para mais detalhes
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        args: ['--unsafe']
+        exclude: '^helm/templates/'
+      - id: check-json
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: mixed-line-ending
+        args: ['--fix=lf']
+      - id: detect-private-key
+
+  - repo: https://github.com/koalaman/shellcheck-precommit
+    rev: v0.10.0
+    hooks:
+      - id: shellcheck
+        args: ['--severity=error']
+
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        name: Lint Dockerfiles (hadolint)
+        args: ['--ignore', 'DL3020', '--ignore', 'DL3008', '--ignore', 'DL4006']
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.35.1
+    hooks:
+      - id: yamllint
+        args: [-d, '{extends: default, rules: {line-length: {max: 180}, document-start: disable, truthy: disable, comments: disable, key-duplicates: disable}}']
+        exclude: '^helm/templates/'

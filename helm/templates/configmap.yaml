@@ -13,7 +13,7 @@ data:
   CFG_DATAROOT: "/var/moodledata"
   CFG_REVERSEPROXY: "false"
   CFG_SSLPROXY: "true"
-  
+
   # --- Configuração Postgres (Dados não sensíveis) ---
   CFG_DBTYPE: "pgsql"
   CFG_DBHOST: {{ .Values.postgres.host | quote }}

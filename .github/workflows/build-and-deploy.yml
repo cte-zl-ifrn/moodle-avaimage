@@ -242,7 +242,7 @@ jobs:
   deploy-main:
     needs: [detect-base-changes, build-main]
     if: |
-      always() && 
+      always() &&
       needs.build-main.result == 'success' &&
       needs.detect-base-changes.outputs.is_prod == 'true'
     runs-on: [self-hosted, runner-dead]

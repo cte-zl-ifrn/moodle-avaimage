@@ -62,7 +62,7 @@ Configure em: **Settings → Secrets and variables → Actions**
 ctezlifrn/avamoodlebase (base/)
          ↓
          └── usa como FROM
-         
+
 ctezlifrn/avamoodle (main/)
 ```
 
