@@ -19,10 +19,7 @@ ADD build/plugins /tmp/build/plugins
 
 USER www-data
 WORKDIR /tmp/build/plugins
-RUN set -eux; \
-    for plugin in *.zip; do \
-        moodle-install-package.sh "$plugin"; \
-    done
+RUN moodle-install-package.sh
 RUN sed -i s/ava_image_not_built/$AVA_IMAGE_VERSION/g /var/www/html/readenv.php
 
 
