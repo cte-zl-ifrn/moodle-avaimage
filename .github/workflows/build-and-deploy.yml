@@ -7,6 +7,7 @@ on:
 
 env:
   REGISTRY: ${{ vars.DOCKERHUB_HOST }}
+  IMAGE_PREFIX: ${{ vars.DOCKERHUB_HOST != '' && format('{0}/', vars.DOCKERHUB_HOST) || '' }}
   BASE_IMAGE: ctezlifrn/avamoodlebase
   MAIN_IMAGE: ctezlifrn/avamoodle
   DEV_IMAGE: ctezlifrn/avamoodledev
@@ -123,8 +124,8 @@ jobs:
         with:
           context: ./base
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE }}:${{ env.CLEAN_VERSION }}
-          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.BASE_IMAGE }}:latest
+          tags: ${{ env.IMAGE_PREFIX }}${{ env.BASE_IMAGE }}:${{ env.CLEAN_VERSION }}
+          cache-from: type=registry,ref=${{ env.IMAGE_PREFIX }}${{ env.BASE_IMAGE }}:latest
           cache-to: type=inline
           build-args: |
             NVM_INSTALL_SHA256=${{ vars.NVM_INSTALL_SHA256 }}
@@ -164,7 +165,7 @@ jobs:
         with:
           context: ./main
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.MAIN_IMAGE }}:${{ github.ref_name }}
+          tags: ${{ env.IMAGE_PREFIX }}${{ env.MAIN_IMAGE }}:${{ github.ref_name }}
           build-args: |
             AVA_IMAGE_VERSION=${{ env.CLEAN_VERSION }}
             NVM_INSTALL_SHA256=${{ vars.NVM_INSTALL_SHA256 }}
@@ -205,7 +206,7 @@ jobs:
           context: ./main
           target: dev
           push: true
-          tags: ${{ env.REGISTRY }}/${{ env.DEV_IMAGE }}:${{ github.ref_name }}
+          tags: ${{ env.IMAGE_PREFIX }}${{ env.DEV_IMAGE }}:${{ github.ref_name }}
           build-args: |
             AVA_IMAGE_VERSION=${{ env.CLEAN_VERSION }}
             NVM_INSTALL_SHA256=${{ vars.NVM_INSTALL_SHA256 }}
@@ -237,7 +238,7 @@ jobs:
           ssh ${{ vars.K8S_HOST }} "helm upgrade --install moodle /tmp/moodle-chart \
             --namespace ava \
             --set image.tag=$DEPLOY_TAG \
-            --set image.repository=${{ env.REGISTRY }}/${{ env.DEV_IMAGE }}"
+            --set image.repository=${{ env.IMAGE_PREFIX }}${{ env.DEV_IMAGE }}"
 
   deploy-main:
     needs: [detect-base-changes, build-main]
