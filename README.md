@@ -33,7 +33,7 @@ O workflow possui uma trava de segurança por formato de tag e um mecanismo de b
    - **Teste** (`is_test`): Constrói e envia a imagem de desenvolvimento `ctezlifrn/avamoodledev:<tag>` (usando o estágio `dev` do Dockerfile).
 
 4. **Deploy Automático**:
-   - **Produção**: Atualiza o servidor via Docker Compose (job `deploy-main`).
+   - **Produção**: Atualiza o servidor via Docker Compose (job `deploy-main`) de qualquer tag que não termine e `-test`.
    - **Teste**: Atualiza o ambiente de homologação no cluster Kubernetes via Helm Chart (job `deploy-test`).
 
 ### Como Fazer um Release
