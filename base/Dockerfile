@@ -1,11 +1,11 @@
 ############################
 ## Imagem base
 ####################################################################################
-FROM php:8.3.30-apache-trixie
+FROM php:8.3.33-apache-trixie
 
 
 ENV DEBIAN_FRONTEND=noninteractive
-ENV MOODLE_VERSION=4.5.12
+ENV MOODLE_VERSION=4.5.13
 
 ADD build/php-extensions.sh             /tmp/build/php-extensions.sh
 ADD build/locale.gen                    /etc/locale.gen

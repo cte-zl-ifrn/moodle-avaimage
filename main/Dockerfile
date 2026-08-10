@@ -1,4 +1,4 @@
-ARG MOODLE_IMAGE_VERSION=4.5.12.060
+ARG MOODLE_IMAGE_VERSION=4.5.12.073
 
 ############################
 ## STAGE: build
@@ -13,9 +13,6 @@ USER root
 RUN apt-get update \
     && apt-get install -y --no-install-recommends curl jq ca-certificates unzip zip rsync \
     && rm -rf /var/lib/apt/lists/*
-
-COPY build/moodle-install-package.sh /usr/local/bin/moodle-install-package.sh
-RUN chmod +x /usr/local/bin/moodle-install-package.sh
 
 ADD build/plugins /tmp/build/plugins
 
