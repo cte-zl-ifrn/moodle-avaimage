@@ -9,7 +9,6 @@ ENV MOODLE_VERSION=4.5.13
 
 ADD build/php-extensions.sh             /tmp/build/php-extensions.sh
 ADD build/locale.gen                    /etc/locale.gen
-ADD build/moodle-install-package.sh     /usr/local/bin/
 ADD runtime/shell/                      /usr/local/bin/
 ADD runtime/ini/                        /usr/local/etc/php/conf.d/
 ADD runtime/apache/                     /etc/apache2/conf-available/
