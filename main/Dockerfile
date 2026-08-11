@@ -15,7 +15,7 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 ADD moodle-install-package.sh /usr/local/bin/moodle-install-package.sh
-ADD build/plugins /tmp/build/plugins
+ADD build/plugins  /tmp/build/plugins
 
 USER www-data
 WORKDIR /tmp/build/plugins

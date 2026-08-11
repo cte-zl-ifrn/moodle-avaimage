@@ -5,6 +5,7 @@ export COLOR_LIGHT_GREEN='\e[1;32m'
 export COLOR_RED='\033[0;31m'
 export COLOR_PURPLE='\033[0;35m'
 export COLOR_CIAN='\033[0;36m'
+export COLOR_YELLOw='\033[0;33m'
 export COLOR_NC='\033[0m' # No Color
 
 install_moodle_package() {
@@ -161,7 +162,8 @@ install_moodle_package() {
 
     local formatted_version
     formatted_version=$(printf "%-11s" "${plugin_version:-N/A}")
-    echo -e "${COLOR_LIGHT_GREEN}INSTALL ${COLOR_RED}${plugin_component}${COLOR_LIGHT_GREEN}:${COLOR_CIAN}${formatted_version}${COLOR_LIGHT_GREEN} at ${COLOR_PURPLE}$dir/$plugin_name${COLOR_NC}, from $target_zip"
+    echo -e "${COLOR_RED}${plugin_type}${COLOR_NC}:${COLOR_LIGHT_GREEN}${plugin_name}${COLOR_NC}:${COLOR_CIAN}${formatted_version}${COLOR_NC}/${COLOR_PURPLE}$target_zip${COLOR_NC}>${COLOR_YELLOw}$dir/$plugin_name${COLOR_NC}"
+
 
     local src_dir
     if [ -n "$version_file" ]; then
