@@ -246,7 +246,7 @@ jobs:
       always() &&
       needs.build-main.result == 'success' &&
       needs.detect-base-changes.outputs.is_prod == 'true'
-    runs-on: [self-hosted, runner-dead]
+    runs-on: self-hosted
     permissions:
       contents: read
 
